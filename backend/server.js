@@ -11,6 +11,8 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
 
 const { loadConfig } = require("./src/config");
 const authRoutes = require("./src/routes/auth");
@@ -48,6 +50,14 @@ app.use("/api/reports", reportRoutes);
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
+
+const frontendBuildPath = path.join(__dirname, "..", "frontend", "build");
+if (fs.existsSync(frontendBuildPath)) {
+  app.use(express.static(frontendBuildPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendBuildPath, "index.html"));
+  });
+}
 
 async function start() {
   try {
