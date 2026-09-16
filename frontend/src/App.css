@@ -581,9 +581,23 @@ select:focus {
 }
 
 .otp-gate .outline-button {
-  color: #eaf8ff;
-  border-color: rgba(234, 248, 255, 0.45);
-  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-color: #245b89;
+  background: #245b89;
+  font-weight: 800;
+}
+
+.otp-gate .outline-button:hover:not(:disabled) {
+  background: #1d4f79;
+  border-color: #1d4f79;
+}
+
+.otp-gate .outline-button:disabled {
+  color: #6b7b8d;
+  border-color: #cbd5e1;
+  background: #e5edf5;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .otp-gate .helper-text {
