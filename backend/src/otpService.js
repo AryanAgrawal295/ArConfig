@@ -47,6 +47,7 @@ function mailTransportConfig() {
     port: Number(process.env.SMTP_PORT || 587),
     secure: String(process.env.SMTP_SECURE || "false").toLowerCase() === "true",
     auth: { user, pass },
+    family: Number(process.env.SMTP_FAMILY || 4),
     connectionTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
     greetingTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
     socketTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
