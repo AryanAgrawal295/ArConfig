@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 90" role="img" aria-labelledby="title desc">
+  <title id="title">Arcturus Consulting Services Inc</title>
+  <desc id="desc">Arcturus Consulting Services Inc company logo</desc>
+  <defs>
+    <linearGradient id="markA" x1="6" y1="56" x2="81" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00A8E6"/>
+      <stop offset="0.55" stop-color="#35C7EC"/>
+      <stop offset="1" stop-color="#2B2C91"/>
+    </linearGradient>
+    <linearGradient id="markB" x1="17" y1="93" x2="65" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#068FD2"/>
+      <stop offset="0.62" stop-color="#2AC9EF"/>
+      <stop offset="1" stop-color="#202C8D"/>
+    </linearGradient>
+    <linearGradient id="markC" x1="56" y1="98" x2="86" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#19106D"/>
+      <stop offset="0.45" stop-color="#1D51B7"/>
+      <stop offset="1" stop-color="#2F268B"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="360" height="90" fill="#FFFFFF"/>
+  <g transform="translate(12 16) scale(0.68)">
+    <path d="M0 45 L93 0 L82 92 L61 47 L35 73 L37 50 Z" fill="#17227E"/>
+    <path d="M5 44 L84 8 L40 45 Z" fill="url(#markA)"/>
+    <path d="M42 46 L81 15 L68 45 L84 88 Z" fill="#27BFEA"/>
+    <path d="M42 46 L61 47 L15 96 Z" fill="url(#markB)"/>
+    <path d="M61 47 L84 8 L84 88 Z" fill="url(#markC)"/>
+    <path d="M37 50 L19 60 L18 78 L61 47 Z" fill="#1DB7E8"/>
+    <path d="M5 44 L42 46 L37 50 Z" fill="#FFFFFF"/>
+    <path d="M18 78 L37 50 L61 47 Z" fill="#FFFFFF" opacity="0.92"/>
+  </g>
+
+  <g fill="#080808" font-family="Arial, Helvetica, sans-serif">
+    <text x="86" y="38" font-size="32" font-weight="700" letter-spacing="0.5">ARCTURUS</text>
+    <text x="88" y="61" font-size="13" font-weight="400" letter-spacing="1.05">CONSULTING SERVICES INC</text>
+  </g>
+</svg>

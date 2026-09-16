@@ -1,0 +1,23 @@
+{
+  "name": "configsnapshot-backend",
+  "version": "1.0.0",
+  "description": "ArConfig backend - Oracle Fusion Configuration Management",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test",
+    "typecheck": "node --check server.js && find src -name '*.js' -exec node --check {} \\;",
+    "lint": "npm run typecheck"
+  },
+  "dependencies": {
+    "@fast-csv/parse": "^4.3.6",
+    "axios": "^1.7.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "jszip": "^3.10.1",
+    "mongoose": "^8.4.0"
+  }
+}

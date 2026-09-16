@@ -1,0 +1,4 @@
+.env
+.credential-key
+output/
+node_modules/

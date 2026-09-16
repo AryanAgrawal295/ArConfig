@@ -1,0 +1,48 @@
+const ERROR_STATUS = {
+  AUTHENTICATION_FAILED: 401,
+  UNAUTHORIZED_CONNECTION: 403,
+  INVALID_CONNECTION: 400,
+  MISSING_PARAMETER: 400,
+  MODULE_NOT_SUPPORTED: 400,
+  CONFIG_ITEM_NOT_SUPPORTED: 400,
+  DUPLICATE_COMPARISON_KEY: 422,
+  CONNECTION_FAILED: 502,
+  EXTRACTION_FAILED: 502,
+  EMPTY_EXTRACTION: 422,
+  COMPARISON_FAILED: 500,
+  REPORT_GENERATION_FAILED: 500,
+  INVALID_MIGRATION_SOURCE: 400,
+  INVALID_WORKBOOK: 422,
+  WORKBOOK_VERSION_UNSUPPORTED: 422,
+  MIGRATION_NOT_SUPPORTED: 422,
+  MIGRATION_PARAMETER_MISSING: 400,
+  DEPENDENCY_MISSING: 422,
+  DESTINATION_CONNECTION_FAILED: 502,
+  DESTINATION_NOT_SUPPORTED: 422,
+  MIGRATION_VALIDATION_FAILED: 422,
+  MIGRATION_PLAN_EXPIRED: 409,
+  MIGRATION_PLAN_CHANGED: 409,
+  MIGRATION_EXECUTION_FAILED: 500,
+  MIGRATION_PARTIAL_FAILURE: 500,
+  POST_MIGRATION_VERIFICATION_FAILED: 500,
+  PRODUCTION_MIGRATION_UNAUTHORIZED: 403,
+};
+
+class AppError extends Error {
+  constructor(code, message, details, status) {
+    super(message);
+    this.name = "AppError";
+    this.code = code;
+    this.status = status || ERROR_STATUS[code] || 500;
+    this.details = details;
+  }
+}
+
+function errorResponse(error) {
+  const code = error.code || "INTERNAL_ERROR";
+  const body = { error: error.message || "Unexpected server error.", code };
+  if (error.details !== undefined) body.details = error.details;
+  return { status: error.status || ERROR_STATUS[code] || 500, body };
+}
+
+module.exports = { AppError, errorResponse };
