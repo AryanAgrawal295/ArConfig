@@ -3,14 +3,15 @@ const crypto = require("crypto");
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
 const sessions = new Map();
 
-function createSession(cfg) {
+function createSession(cfg, verifiedEmail = "") {
   const token = crypto.randomBytes(32).toString("base64url");
   const ownerId = crypto
     .createHash("sha256")
-    .update(String(cfg.username).trim().toLowerCase())
+    .update(String(verifiedEmail || cfg.username).trim().toLowerCase())
     .digest("hex");
   sessions.set(token, {
     ownerId,
+    verifiedEmail,
     cfg: { ...cfg, missing: [] },
     expiresAt: Date.now() + SESSION_TTL_MS,
   });

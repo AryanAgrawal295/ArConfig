@@ -46,6 +46,11 @@ function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [arcturusEmail, setArcturusEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [verificationToken, setVerificationToken] = useState("");
+  const [verifiedArcturusEmail, setVerifiedArcturusEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [message, setMessage] = useState(null);
@@ -99,8 +104,43 @@ function App() {
     setFusionCredentials((current) => ({ ...current, [field]: value }));
   };
 
+  const isArcturusEmail = (value) => String(value || "").trim().toLowerCase().endsWith("@arctrs.com");
+
+  const handleRequestOtp = async () => {
+    setOtpLoading(true);
+    setMessage(null);
+    try {
+      await axios.post("/api/auth/request-otp", { email: arcturusEmail });
+      setOtpCode("");
+      setVerificationToken("");
+      setVerifiedArcturusEmail("");
+      setMessage({ type: "success", text: "OTP sent to your Arcturus email." });
+    } catch (error) {
+      setMessage({ type: "error", text: error.response?.data?.error || error.message });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setOtpLoading(true);
+    setMessage(null);
+    try {
+      const response = await axios.post("/api/auth/verify-otp", { email: arcturusEmail, otp: otpCode });
+      setVerificationToken(response.data.verificationToken);
+      setVerifiedArcturusEmail(response.data.email);
+      setMessage({ type: "success", text: "Arcturus email verified. You can now enter Oracle credentials." });
+    } catch (error) {
+      setVerificationToken("");
+      setVerifiedArcturusEmail("");
+      setMessage({ type: "error", text: error.response?.data?.error || error.message });
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
   const verifyFusionCredentials = async (clearPassword = false) => {
-    const response = await axios.post("/api/auth/login", fusionCredentials);
+    const response = await axios.post("/api/auth/login", { ...fusionCredentials, verificationToken });
     axios.defaults.headers.common.Authorization = `Bearer ${response.data.sessionToken}`;
     if (rememberCredentials) {
       localStorage.setItem("fusionBaseUrl", response.data.fusion.baseUrl);
@@ -240,6 +280,10 @@ function App() {
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    if (!verificationToken) {
+      setMessage({ type: "error", text: "Verify your @arctrs.com email with OTP before entering Oracle credentials." });
+      return;
+    }
     setLoginLoading(true);
     setMessage(null);
     addLog("Testing Oracle Fusion connection...");
@@ -266,6 +310,9 @@ function App() {
     delete axios.defaults.headers.common.Authorization;
     setActiveView("dashboard");
     setFusionCredentials((current) => ({ ...current, password: "" }));
+    setOtpCode("");
+    setVerificationToken("");
+    setVerifiedArcturusEmail("");
     setOfferings([]);
     setOffering(null);
     setFunctionalAreas([]);
@@ -429,18 +476,65 @@ function App() {
           <p>{productTagline}</p>
         </div>
         <form className="login-panel" onSubmit={handleLogin}>
-          <label htmlFor="fusion-base-url">Oracle Fusion URL</label>
-          <input id="fusion-base-url" value={fusionCredentials.baseUrl} onChange={(event) => handleCredentialChange("baseUrl", event.target.value)} placeholder="https://your-instance.oraclecloud.com" disabled={loginLoading} required />
-          <label htmlFor="fusion-username">Username</label>
-          <input id="fusion-username" value={fusionCredentials.username} onChange={(event) => handleCredentialChange("username", event.target.value)} placeholder="Fusion username" disabled={loginLoading} required />
-          <label htmlFor="fusion-password">Password</label>
-          <input id="fusion-password" type="password" value={fusionCredentials.password} onChange={(event) => handleCredentialChange("password", event.target.value)} placeholder="Password" disabled={loginLoading} required />
-          <label className="checkbox-row"><input type="checkbox" checked={rememberCredentials} onChange={(event) => setRememberCredentials(event.target.checked)} disabled={loginLoading} />Remember URL and username</label>
+          <div className="otp-gate">
+            <label htmlFor="arcturus-email">Arcturus email ID</label>
+            <input
+              id="arcturus-email"
+              type="email"
+              value={arcturusEmail}
+              onChange={(event) => {
+                setArcturusEmail(event.target.value);
+                setVerificationToken("");
+                setVerifiedArcturusEmail("");
+              }}
+              placeholder="name@arctrs.com"
+              disabled={otpLoading || loginLoading || Boolean(verifiedArcturusEmail)}
+              required
+            />
+            <button
+              className="outline-button"
+              type="button"
+              onClick={handleRequestOtp}
+              disabled={otpLoading || loginLoading || Boolean(verifiedArcturusEmail) || !isArcturusEmail(arcturusEmail)}
+            >
+              {otpLoading && !verificationToken ? "Sending..." : "Send OTP"}
+            </button>
+            <label htmlFor="arcturus-otp">OTP</label>
+            <input
+              id="arcturus-otp"
+              value={otpCode}
+              onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="6-digit OTP"
+              inputMode="numeric"
+              disabled={otpLoading || loginLoading || Boolean(verifiedArcturusEmail)}
+            />
+            <button
+              className="outline-button"
+              type="button"
+              onClick={handleVerifyOtp}
+              disabled={otpLoading || loginLoading || Boolean(verifiedArcturusEmail) || otpCode.length !== 6 || !isArcturusEmail(arcturusEmail)}
+            >
+              {otpLoading ? "Verifying..." : "Verify OTP"}
+            </button>
+            {verifiedArcturusEmail && <p className="status-ok compact-status">Verified: {verifiedArcturusEmail}</p>}
+            <p className="helper-text">Only company email IDs ending with @arctrs.com can continue.</p>
+          </div>
+          {verifiedArcturusEmail && (
+            <>
+              <label htmlFor="fusion-base-url">Oracle Fusion URL</label>
+              <input id="fusion-base-url" value={fusionCredentials.baseUrl} onChange={(event) => handleCredentialChange("baseUrl", event.target.value)} placeholder="https://your-instance.oraclecloud.com" disabled={loginLoading} required />
+              <label htmlFor="fusion-username">Username</label>
+              <input id="fusion-username" value={fusionCredentials.username} onChange={(event) => handleCredentialChange("username", event.target.value)} placeholder="Fusion username" disabled={loginLoading} required />
+              <label htmlFor="fusion-password">Password</label>
+              <input id="fusion-password" type="password" value={fusionCredentials.password} onChange={(event) => handleCredentialChange("password", event.target.value)} placeholder="Password" disabled={loginLoading} required />
+              <label className="checkbox-row"><input type="checkbox" checked={rememberCredentials} onChange={(event) => setRememberCredentials(event.target.checked)} disabled={loginLoading} />Remember URL and username</label>
+            </>
+          )}
           {renderMessage()}
           <div className="login-actions">
             <button className="outline-button" type="button" onClick={() => setShowLogin(false)} disabled={loginLoading}>Back</button>
-            <button className="outline-button" type="button" onClick={handleTestConnection} disabled={loginLoading || loading}>Test Connection</button>
-            <button type="submit" disabled={loginLoading}>{loginLoading ? "Checking..." : "Login"}</button>
+            <button className="outline-button" type="button" onClick={handleTestConnection} disabled={loginLoading || loading || !verificationToken}>Test Connection</button>
+            <button type="submit" disabled={loginLoading || !verificationToken}>{loginLoading ? "Checking..." : "Login"}</button>
           </div>
         </form>
       </section>

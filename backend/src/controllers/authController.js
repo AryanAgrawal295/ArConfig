@@ -2,11 +2,35 @@ const { buildClient, verifyAuth } = require("../auth");
 const { applyFusionCredentials, loadConfig } = require("../config");
 const { createSession, getSession } = require("../sessionStore");
 const { writeAudit } = require("../auditService");
+const { errorResponse } = require("../errors");
+const { consumeVerificationToken, sendOtp, verifyOtp } = require("../otpService");
 const { httpUrl } = require("../validation");
+
+async function requestOtp(req, res) {
+  try {
+    const result = await sendOtp(req.body?.email);
+    return res.json({ message: "OTP sent to your Arcturus email.", ...result });
+  } catch (error) {
+    const response = errorResponse(error);
+    return res.status(response.status).json(response.body);
+  }
+}
+
+async function confirmOtp(req, res) {
+  try {
+    const result = verifyOtp(req.body?.email, req.body?.otp);
+    return res.json({ message: "Arcturus email verified.", ...result });
+  } catch (error) {
+    const response = errorResponse(error);
+    return res.status(response.status).json(response.body);
+  }
+}
 
 async function login(req, res) {
   let cfg;
+  let verifiedEmail;
   try {
+    verifiedEmail = consumeVerificationToken(req.body?.verificationToken);
     cfg = applyFusionCredentials(loadConfig(), req.body);
     cfg.baseUrl = httpUrl(cfg.baseUrl, "Oracle Fusion URL");
   } catch (error) {
@@ -31,12 +55,13 @@ async function login(req, res) {
       });
     }
 
-    const session = createSession(cfg);
-    await writeAudit({ ownerId: session.ownerId, action: "CONNECTION_LOGIN", metadata: { baseUrl: cfg.baseUrl, username: cfg.username } });
+    const session = createSession(cfg, verifiedEmail);
+    await writeAudit({ ownerId: session.ownerId, action: "CONNECTION_LOGIN", metadata: { baseUrl: cfg.baseUrl, username: cfg.username, verifiedEmail } });
     return res.status(200).json({
       message: "Login successful",
       sessionToken: session.token,
       expiresAt: session.expiresAt,
+      verifiedEmail,
       fusion: {
         baseUrl: cfg.baseUrl,
         username: cfg.username,
@@ -59,4 +84,4 @@ async function testSession(req, res) {
   }
 }
 
-module.exports = { login, testSession };
+module.exports = { confirmOtp, login, requestOtp, testSession };
