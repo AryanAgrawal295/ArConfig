@@ -54,6 +54,32 @@ function mailTransportConfig() {
   };
 }
 
+async function sendWithResend({ email, otp, from }) {
+  const apiKey = String(process.env.RESEND_API_KEY || "").trim();
+  if (!apiKey) return false;
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to: email,
+      subject: "Your ArConfig verification OTP",
+      text: `Your ArConfig OTP is ${otp}. It expires in 10 minutes.`,
+      html: `<p>Your ArConfig OTP is <strong>${otp}</strong>.</p><p>It expires in 10 minutes.</p>`,
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(`Resend API returned ${response.status}: ${body}`);
+  }
+  return true;
+}
+
 async function sendOtp(emailInput) {
   const email = assertArcturusEmail(emailInput);
   const otp = String(crypto.randomInt(100000, 1000000));
@@ -63,21 +89,24 @@ async function sendOtp(emailInput) {
     attempts: 0,
   });
 
-  const transporter = nodemailer.createTransport(mailTransportConfig());
-  const from = String(process.env.OTP_FROM_EMAIL || process.env.SMTP_USER || "").trim();
+  const from = String(process.env.OTP_FROM_EMAIL || process.env.SMTP_USER || "onboarding@resend.dev").trim();
   try {
-    await transporter.sendMail({
-      from,
-      to: email,
-      subject: "Your ArConfig verification OTP",
-      text: `Your ArConfig OTP is ${otp}. It expires in 10 minutes.`,
-      html: `<p>Your ArConfig OTP is <strong>${otp}</strong>.</p><p>It expires in 10 minutes.</p>`,
-    });
+    const sentWithResend = await sendWithResend({ email, otp, from });
+    if (!sentWithResend) {
+      const transporter = nodemailer.createTransport(mailTransportConfig());
+      await transporter.sendMail({
+        from,
+        to: email,
+        subject: "Your ArConfig verification OTP",
+        text: `Your ArConfig OTP is ${otp}. It expires in 10 minutes.`,
+        html: `<p>Your ArConfig OTP is <strong>${otp}</strong>.</p><p>It expires in 10 minutes.</p>`,
+      });
+    }
   } catch (error) {
     logger.error(`OTP email send failed for ${email}: ${error.message}`);
     throw new AppError(
       "OTP_EMAIL_SEND_FAILED",
-      "Could not send OTP email. Check SMTP env values, Gmail app password, and Render logs."
+      "Could not send OTP email. Check Resend/SMTP env values and Render logs."
     );
   }
   logger.info(`Sent Arcturus OTP to ${email}`);
