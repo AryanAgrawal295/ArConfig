@@ -47,6 +47,9 @@ function mailTransportConfig() {
     port: Number(process.env.SMTP_PORT || 587),
     secure: String(process.env.SMTP_SECURE || "false").toLowerCase() === "true",
     auth: { user, pass },
+    connectionTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
+    greetingTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
+    socketTimeout: Number(process.env.SMTP_TIMEOUT_MS || 15000),
   };
 }
 
@@ -61,13 +64,21 @@ async function sendOtp(emailInput) {
 
   const transporter = nodemailer.createTransport(mailTransportConfig());
   const from = String(process.env.OTP_FROM_EMAIL || process.env.SMTP_USER || "").trim();
-  await transporter.sendMail({
-    from,
-    to: email,
-    subject: "Your ArConfig verification OTP",
-    text: `Your ArConfig OTP is ${otp}. It expires in 10 minutes.`,
-    html: `<p>Your ArConfig OTP is <strong>${otp}</strong>.</p><p>It expires in 10 minutes.</p>`,
-  });
+  try {
+    await transporter.sendMail({
+      from,
+      to: email,
+      subject: "Your ArConfig verification OTP",
+      text: `Your ArConfig OTP is ${otp}. It expires in 10 minutes.`,
+      html: `<p>Your ArConfig OTP is <strong>${otp}</strong>.</p><p>It expires in 10 minutes.</p>`,
+    });
+  } catch (error) {
+    logger.error(`OTP email send failed for ${email}: ${error.message}`);
+    throw new AppError(
+      "OTP_EMAIL_SEND_FAILED",
+      "Could not send OTP email. Check SMTP env values, Gmail app password, and Render logs."
+    );
+  }
   logger.info(`Sent Arcturus OTP to ${email}`);
   return { email, expiresInMinutes: 10 };
 }

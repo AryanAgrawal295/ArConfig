@@ -46,7 +46,7 @@ function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
-  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState("");
   const [arcturusEmail, setArcturusEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [verificationToken, setVerificationToken] = useState("");
@@ -107,7 +107,7 @@ function App() {
   const isArcturusEmail = (value) => String(value || "").trim().toLowerCase().endsWith("@arctrs.com");
 
   const handleRequestOtp = async () => {
-    setOtpLoading(true);
+    setOtpLoading("send");
     setMessage(null);
     try {
       await axios.post("/api/auth/request-otp", { email: arcturusEmail });
@@ -118,12 +118,12 @@ function App() {
     } catch (error) {
       setMessage({ type: "error", text: error.response?.data?.error || error.message });
     } finally {
-      setOtpLoading(false);
+      setOtpLoading("");
     }
   };
 
   const handleVerifyOtp = async () => {
-    setOtpLoading(true);
+    setOtpLoading("verify");
     setMessage(null);
     try {
       const response = await axios.post("/api/auth/verify-otp", { email: arcturusEmail, otp: otpCode });
@@ -135,7 +135,7 @@ function App() {
       setVerifiedArcturusEmail("");
       setMessage({ type: "error", text: error.response?.data?.error || error.message });
     } finally {
-      setOtpLoading(false);
+      setOtpLoading("");
     }
   };
 
@@ -488,16 +488,16 @@ function App() {
                 setVerifiedArcturusEmail("");
               }}
               placeholder="name@arctrs.com"
-              disabled={otpLoading || loginLoading || Boolean(verifiedArcturusEmail)}
+              disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail)}
               required
             />
             <button
               className="outline-button"
               type="button"
               onClick={handleRequestOtp}
-              disabled={otpLoading || loginLoading || Boolean(verifiedArcturusEmail) || !isArcturusEmail(arcturusEmail)}
+              disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail) || !isArcturusEmail(arcturusEmail)}
             >
-              {otpLoading && !verificationToken ? "Sending..." : "Send OTP"}
+              {otpLoading === "send" ? "Sending..." : "Send OTP"}
             </button>
             <label htmlFor="arcturus-otp">OTP</label>
             <input
@@ -506,15 +506,15 @@ function App() {
               onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
               placeholder="6-digit OTP"
               inputMode="numeric"
-              disabled={otpLoading || loginLoading || Boolean(verifiedArcturusEmail)}
+              disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail)}
             />
             <button
               className="outline-button"
               type="button"
               onClick={handleVerifyOtp}
-              disabled={otpLoading || loginLoading || Boolean(verifiedArcturusEmail) || otpCode.length !== 6 || !isArcturusEmail(arcturusEmail)}
+              disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail) || otpCode.length !== 6 || !isArcturusEmail(arcturusEmail)}
             >
-              {otpLoading ? "Verifying..." : "Verify OTP"}
+              {otpLoading === "verify" ? "Verifying..." : "Verify OTP"}
             </button>
             {verifiedArcturusEmail && <p className="status-ok compact-status">Verified: {verifiedArcturusEmail}</p>}
             <p className="helper-text">Only company email IDs ending with @arctrs.com can continue.</p>
