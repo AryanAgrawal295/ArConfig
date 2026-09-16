@@ -9,7 +9,7 @@ const { httpUrl } = require("../validation");
 async function requestOtp(req, res) {
   try {
     const result = await sendOtp(req.body?.email);
-    return res.json({ message: "OTP sent to your Arcturus email.", ...result });
+    return res.json({ message: "OTP sent to your email.", ...result });
   } catch (error) {
     const response = errorResponse(error);
     return res.status(response.status).json(response.body);
@@ -19,7 +19,7 @@ async function requestOtp(req, res) {
 async function confirmOtp(req, res) {
   try {
     const result = verifyOtp(req.body?.email, req.body?.otp);
-    return res.json({ message: "Arcturus email verified.", ...result });
+    return res.json({ message: "Email verified.", ...result });
   } catch (error) {
     const response = errorResponse(error);
     return res.status(response.status).json(response.body);

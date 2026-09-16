@@ -104,7 +104,7 @@ function App() {
     setFusionCredentials((current) => ({ ...current, [field]: value }));
   };
 
-  const isArcturusEmail = (value) => String(value || "").trim().toLowerCase().endsWith("@arctrs.com");
+  const isAllowedOtpEmail = (value) => String(value || "").trim().toLowerCase().endsWith("@gmail.com");
 
   const handleRequestOtp = async () => {
     setOtpLoading("send");
@@ -114,7 +114,7 @@ function App() {
       setOtpCode("");
       setVerificationToken("");
       setVerifiedArcturusEmail("");
-      setMessage({ type: "success", text: "OTP sent to your Arcturus email." });
+      setMessage({ type: "success", text: "OTP sent to your email." });
     } catch (error) {
       setMessage({ type: "error", text: error.response?.data?.error || error.message });
     } finally {
@@ -129,7 +129,7 @@ function App() {
       const response = await axios.post("/api/auth/verify-otp", { email: arcturusEmail, otp: otpCode });
       setVerificationToken(response.data.verificationToken);
       setVerifiedArcturusEmail(response.data.email);
-      setMessage({ type: "success", text: "Arcturus email verified. You can now enter Oracle credentials." });
+      setMessage({ type: "success", text: "Email verified. You can now enter Oracle credentials." });
     } catch (error) {
       setVerificationToken("");
       setVerifiedArcturusEmail("");
@@ -281,7 +281,7 @@ function App() {
   const handleLogin = async (event) => {
     event.preventDefault();
     if (!verificationToken) {
-      setMessage({ type: "error", text: "Verify your @arctrs.com email with OTP before entering Oracle credentials." });
+      setMessage({ type: "error", text: "Verify your @gmail.com email with OTP before entering Oracle credentials." });
       return;
     }
     setLoginLoading(true);
@@ -477,7 +477,7 @@ function App() {
         </div>
         <form className="login-panel" onSubmit={handleLogin}>
           <div className="otp-gate">
-            <label htmlFor="arcturus-email">Arcturus email ID</label>
+            <label htmlFor="arcturus-email">Email ID</label>
             <input
               id="arcturus-email"
               type="email"
@@ -487,7 +487,7 @@ function App() {
                 setVerificationToken("");
                 setVerifiedArcturusEmail("");
               }}
-              placeholder="name@arctrs.com"
+              placeholder="name@gmail.com"
               disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail)}
               required
             />
@@ -495,7 +495,7 @@ function App() {
               className="outline-button"
               type="button"
               onClick={handleRequestOtp}
-              disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail) || !isArcturusEmail(arcturusEmail)}
+              disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail) || !isAllowedOtpEmail(arcturusEmail)}
             >
               {otpLoading === "send" ? "Sending..." : "Send OTP"}
             </button>
@@ -512,12 +512,12 @@ function App() {
               className="outline-button"
               type="button"
               onClick={handleVerifyOtp}
-              disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail) || otpCode.length !== 6 || !isArcturusEmail(arcturusEmail)}
+              disabled={Boolean(otpLoading) || loginLoading || Boolean(verifiedArcturusEmail) || otpCode.length !== 6 || !isAllowedOtpEmail(arcturusEmail)}
             >
               {otpLoading === "verify" ? "Verifying..." : "Verify OTP"}
             </button>
             {verifiedArcturusEmail && <p className="status-ok compact-status">Verified: {verifiedArcturusEmail}</p>}
-            <p className="helper-text">Only company email IDs ending with @arctrs.com can continue.</p>
+            <p className="helper-text">Testing mode: only email IDs ending with @gmail.com can continue.</p>
           </div>
           {verifiedArcturusEmail && (
             <>

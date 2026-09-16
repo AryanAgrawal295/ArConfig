@@ -22,7 +22,7 @@ function verifiedSessionOrReject(req, res) {
   if (!session) return null;
   if (!session.verifiedEmail) {
     res.status(403).json({
-      error: "Verify your @arctrs.com email before saving Oracle environment credentials.",
+      error: "Verify your email before saving Oracle environment credentials.",
       code: "ARCTURUS_EMAIL_NOT_VERIFIED",
     });
     return null;

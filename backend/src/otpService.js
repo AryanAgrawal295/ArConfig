@@ -3,7 +3,7 @@ const nodemailer = require("nodemailer");
 const { AppError } = require("./errors");
 const logger = require("./logger");
 
-const ARCTURUS_DOMAIN = "@arctrs.com";
+const ARCTURUS_DOMAIN = "@gmail.com";
 const OTP_TTL_MS = 10 * 60 * 1000;
 const VERIFIED_TTL_MS = 30 * 60 * 1000;
 
@@ -17,10 +17,10 @@ function normalizeEmail(email) {
 function assertArcturusEmail(email) {
   const normalized = normalizeEmail(email);
   if (!normalized || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
-    throw new AppError("INVALID_EMAIL", "Enter a valid Arcturus email address.");
+    throw new AppError("INVALID_EMAIL", "Enter a valid Gmail address.");
   }
   if (!normalized.endsWith(ARCTURUS_DOMAIN)) {
-    throw new AppError("INVALID_EMAIL_DOMAIN", `Only Arcturus email IDs ending with ${ARCTURUS_DOMAIN} are allowed.`);
+    throw new AppError("INVALID_EMAIL_DOMAIN", `Only test email IDs ending with ${ARCTURUS_DOMAIN} are allowed.`);
   }
   return normalized;
 }
@@ -122,7 +122,7 @@ function verifyOtp(emailInput, otpInput) {
     throw new AppError("OTP_EXPIRED", "OTP expired. Please request a new OTP.");
   }
   if (!/^\d{6}$/.test(otp)) {
-    throw new AppError("INVALID_OTP", "Enter the 6-digit OTP sent to your Arcturus email.");
+    throw new AppError("INVALID_OTP", "Enter the 6-digit OTP sent to your email.");
   }
   request.attempts += 1;
   if (request.attempts > 5) {
@@ -144,7 +144,7 @@ function consumeVerificationToken(tokenInput) {
   const verified = token ? verifiedTokens.get(token) : null;
   if (!verified || verified.expiresAt <= Date.now()) {
     if (token) verifiedTokens.delete(token);
-    throw new AppError("ARCTURUS_EMAIL_NOT_VERIFIED", "Verify your @arctrs.com email with OTP before entering Oracle credentials.");
+    throw new AppError("ARCTURUS_EMAIL_NOT_VERIFIED", `Verify your ${ARCTURUS_DOMAIN} email with OTP before entering Oracle credentials.`);
   }
   return verified.email;
 }
