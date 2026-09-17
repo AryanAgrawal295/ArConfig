@@ -7,7 +7,7 @@ import MigrationView from "./components/MigrationView";
 
 const savedFusionBaseUrl = localStorage.getItem("fusionBaseUrl") || "";
 const savedFusionUsername = localStorage.getItem("fusionUsername") || "";
-const companyLogo = "/arcturus-logo.svg";
+const companyLogo = "/arcturus-logo.png";
 const productName = "ArConfig";
 const productTagline = "Oracle Fusion Configuration Management";
 
