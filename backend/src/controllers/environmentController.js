@@ -17,19 +17,6 @@ function sessionOrReject(req, res) {
   return session;
 }
 
-function verifiedSessionOrReject(req, res) {
-  const session = sessionOrReject(req, res);
-  if (!session) return null;
-  if (!session.verifiedEmail) {
-    res.status(403).json({
-      error: "Verify your email before saving Oracle environment credentials.",
-      code: "ARCTURUS_EMAIL_NOT_VERIFIED",
-    });
-    return null;
-  }
-  return session;
-}
-
 async function list(req, res) {
   const session = sessionOrReject(req, res); if (!session) return;
   try { return res.json({ connections: await listConnections(session.ownerId) }); }
@@ -37,7 +24,7 @@ async function list(req, res) {
 }
 
 async function create(req, res) {
-  const session = verifiedSessionOrReject(req, res); if (!session) return;
+  const session = sessionOrReject(req, res); if (!session) return;
   try {
     const connection = await createConnection(session.ownerId, req.body || {});
     await writeAudit({ ownerId: session.ownerId, action: "CONNECTION_CREATED", metadata: { connectionId: connection._id, name: connection.name } });
@@ -68,7 +55,7 @@ async function remove(req, res) {
 }
 
 async function update(req, res) {
-  const session = verifiedSessionOrReject(req, res); if (!session) return;
+  const session = sessionOrReject(req, res); if (!session) return;
   try {
     const connection = await updateConnection(session.ownerId, req.params.id, req.body || {});
     await writeAudit({ ownerId: session.ownerId, action: "CONNECTION_UPDATED", metadata: { connectionId: connection._id, name: connection.name } });

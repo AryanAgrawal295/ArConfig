@@ -3,7 +3,7 @@ const { applyFusionCredentials, loadConfig } = require("../config");
 const { createSession, getSession } = require("../sessionStore");
 const { writeAudit } = require("../auditService");
 const { errorResponse } = require("../errors");
-const { consumeVerificationToken, sendOtp, verifyOtp } = require("../otpService");
+const { sendOtp, verifyOtp } = require("../otpService");
 const { httpUrl } = require("../validation");
 
 async function requestOtp(req, res) {
@@ -28,9 +28,7 @@ async function confirmOtp(req, res) {
 
 async function login(req, res) {
   let cfg;
-  let verifiedEmail;
   try {
-    verifiedEmail = consumeVerificationToken(req.body?.verificationToken);
     cfg = applyFusionCredentials(loadConfig(), req.body);
     cfg.baseUrl = httpUrl(cfg.baseUrl, "Oracle Fusion URL");
   } catch (error) {
@@ -55,13 +53,12 @@ async function login(req, res) {
       });
     }
 
-    const session = createSession(cfg, verifiedEmail);
-    await writeAudit({ ownerId: session.ownerId, action: "CONNECTION_LOGIN", metadata: { baseUrl: cfg.baseUrl, username: cfg.username, verifiedEmail } });
+    const session = createSession(cfg);
+    await writeAudit({ ownerId: session.ownerId, action: "CONNECTION_LOGIN", metadata: { baseUrl: cfg.baseUrl, username: cfg.username } });
     return res.status(200).json({
       message: "Login successful",
       sessionToken: session.token,
       expiresAt: session.expiresAt,
-      verifiedEmail,
       fusion: {
         baseUrl: cfg.baseUrl,
         username: cfg.username,
