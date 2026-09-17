@@ -1,38 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 90" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" role="img" aria-labelledby="title desc">
   <title id="title">Arcturus Consulting Services Inc</title>
-  <desc id="desc">Arcturus Consulting Services Inc company logo</desc>
+  <desc id="desc">Arcturus Consulting Services Inc logo with blue paper plane mark</desc>
   <defs>
-    <linearGradient id="markA" x1="6" y1="56" x2="81" y2="18" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#00A8E6"/>
-      <stop offset="0.55" stop-color="#35C7EC"/>
-      <stop offset="1" stop-color="#2B2C91"/>
+    <linearGradient id="wingTop" x1="30" y1="58" x2="124" y2="18" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#16BCEB"/>
+      <stop offset="0.55" stop-color="#27BEEB"/>
+      <stop offset="1" stop-color="#27258B"/>
     </linearGradient>
-    <linearGradient id="markB" x1="17" y1="93" x2="65" y2="48" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#068FD2"/>
-      <stop offset="0.62" stop-color="#2AC9EF"/>
-      <stop offset="1" stop-color="#202C8D"/>
+    <linearGradient id="wingMid" x1="54" y1="93" x2="102" y2="29" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#12AEE2"/>
+      <stop offset="0.58" stop-color="#35D0F0"/>
+      <stop offset="1" stop-color="#2285CF"/>
     </linearGradient>
-    <linearGradient id="markC" x1="56" y1="98" x2="86" y2="18" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#19106D"/>
-      <stop offset="0.45" stop-color="#1D51B7"/>
-      <stop offset="1" stop-color="#2F268B"/>
+    <linearGradient id="wingRight" x1="94" y1="112" x2="135" y2="8" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#15106E"/>
+      <stop offset="0.38" stop-color="#2A9CE1"/>
+      <stop offset="1" stop-color="#2A2588"/>
+    </linearGradient>
+    <linearGradient id="tail" x1="22" y1="102" x2="83" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#088DD0"/>
+      <stop offset="0.7" stop-color="#25C7F0"/>
+      <stop offset="1" stop-color="#1D2F91"/>
     </linearGradient>
   </defs>
 
-  <rect width="360" height="90" fill="#FFFFFF"/>
-  <g transform="translate(12 16) scale(0.68)">
-    <path d="M0 45 L93 0 L82 92 L61 47 L35 73 L37 50 Z" fill="#17227E"/>
-    <path d="M5 44 L84 8 L40 45 Z" fill="url(#markA)"/>
-    <path d="M42 46 L81 15 L68 45 L84 88 Z" fill="#27BFEA"/>
-    <path d="M42 46 L61 47 L15 96 Z" fill="url(#markB)"/>
-    <path d="M61 47 L84 8 L84 88 Z" fill="url(#markC)"/>
-    <path d="M37 50 L19 60 L18 78 L61 47 Z" fill="#1DB7E8"/>
-    <path d="M5 44 L42 46 L37 50 Z" fill="#FFFFFF"/>
-    <path d="M18 78 L37 50 L61 47 Z" fill="#FFFFFF" opacity="0.92"/>
+  <rect width="420" height="120" rx="0" fill="#FFFFFF"/>
+
+  <g transform="translate(16 8)">
+    <path d="M9 58 L132 9 L121 113 L91 61 L39 107 L50 72 Z" fill="#161473"/>
+    <path d="M16 57 L119 17 L60 58 Z" fill="url(#wingTop)"/>
+    <path d="M60 58 L119 17 L91 61 L121 113 Z" fill="url(#wingRight)"/>
+    <path d="M60 58 L91 61 L39 107 L50 72 Z" fill="url(#wingMid)"/>
+    <path d="M50 72 L22 84 L21 104 L91 61 Z" fill="url(#tail)"/>
+    <path d="M16 57 L60 58 L50 72 Z" fill="#FFFFFF"/>
+    <path d="M21 104 L50 72 L91 61 Z" fill="#FFFFFF" opacity="0.94"/>
+    <path d="M64 55 L116 19 L75 65 Z" fill="#42D7F1" opacity="0.72"/>
   </g>
 
-  <g fill="#080808" font-family="Arial, Helvetica, sans-serif">
-    <text x="86" y="38" font-size="32" font-weight="700" letter-spacing="0.5">ARCTURUS</text>
-    <text x="88" y="61" font-size="13" font-weight="400" letter-spacing="1.05">CONSULTING SERVICES INC</text>
+  <g fill="#070707" font-family="Arial, Helvetica, sans-serif">
+    <text x="150" y="52" font-size="42" font-weight="800" letter-spacing="0.5">ARCTURUS</text>
+    <text x="153" y="82" font-size="17" font-weight="400" letter-spacing="1.55">CONSULTING SERVICES INC</text>
   </g>
 </svg>

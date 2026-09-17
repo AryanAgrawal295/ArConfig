@@ -99,6 +99,23 @@ function completeProgress(progressId, status, message) {
   });
 }
 
+function cancelProgress(progressId, message = "Cancellation requested. Stopping after the current task...") {
+  return updateProgress(progressId, {
+    phase: "cancelling",
+    cancellationRequested: true,
+    message,
+  });
+}
+
+function markProgressCancelled(progressId, message = "Task cancelled by user.") {
+  return updateProgress(progressId, {
+    phase: "cancelled",
+    currentTask: null,
+    cancellationRequested: true,
+    message,
+  });
+}
+
 function failProgress(progressId, message) {
   return updateProgress(progressId, {
     phase: "failed",
@@ -118,12 +135,19 @@ function getProgress(progressIdValue) {
   return progress;
 }
 
+function isProgressCancelled(progressIdValue) {
+  return Boolean(getProgress(progressIdValue)?.cancellationRequested);
+}
+
 module.exports = {
   beginTask,
+  cancelProgress,
   completeProgress,
   failProgress,
   finishTask,
   getProgress,
+  isProgressCancelled,
+  markProgressCancelled,
   startProgress,
   updateProgress,
 };

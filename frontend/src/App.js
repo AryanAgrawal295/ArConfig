@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
 import RunHistory from "./components/RunHistory";
 import CompareView from "./components/CompareView";
@@ -33,7 +33,7 @@ function App() {
   const [orgCodes, setOrgCodes] = useState("");
   const [organizationScopeType, setOrganizationScopeType] = useState("business");
   const [showHistory, setShowHistory] = useState(false);
-  const [activeView, setActiveView] = useState("dashboard");
+  const [activeView, setActiveView] = useState(() => localStorage.getItem("arconfigActiveView") || "dashboard");
   const [activityLog, setActivityLog] = useState([
     { time: formatTime(), type: "info", text: "Application started." },
   ]);
@@ -61,6 +61,9 @@ function App() {
   const [catalogNote, setCatalogNote] = useState("");
   const [setupNote, setSetupNote] = useState("");
   const [extractionProgress, setExtractionProgress] = useState(null);
+  const [snapshotCancelRequested, setSnapshotCancelRequested] = useState(false);
+  const activeProgressIdRef = useRef("");
+  const snapshotCancelRequestedRef = useRef(false);
 
   const latestRun = runs[0];
   const selectedTasks = useMemo(
@@ -94,6 +97,10 @@ function App() {
   useEffect(() => {
     fetchHistory();
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("arconfigActiveView", activeView);
+  }, [activeView]);
 
   const handleCredentialChange = (field, value) => {
     setFusionCredentials((current) => ({ ...current, [field]: value }));
@@ -356,8 +363,11 @@ function App() {
     }
 
     setLoading(true);
+    setSnapshotCancelRequested(false);
+    snapshotCancelRequestedRef.current = false;
     setMessage(null);
     const progressId = createProgressId();
+    activeProgressIdRef.current = progressId;
     setExtractionProgress({
       id: progressId,
       phase: "starting",
@@ -394,24 +404,54 @@ function App() {
       });
       const run = response.data.run;
       const successText = `${run.taskCount} tasks processed, ${run.recordCount} records written (${run.status}).`;
-      setMessage({ type: run.status === "success" ? "success" : "error", text: successText });
-      addLog(successText, run.status === "success" ? "success" : "error");
-      addLog(`Combined workbook ready: ${run.outputFile}`, "success");
+      if (!snapshotCancelRequestedRef.current) {
+        setMessage({ type: run.status === "success" ? "success" : "error", text: successText });
+        addLog(successText, run.status === "success" ? "success" : "error");
+        addLog(`Combined workbook ready: ${run.outputFile}`, "success");
+      }
       await pollProgress();
       await fetchHistory();
     } catch (error) {
       const errorText = error.response?.data?.error || error.message;
-      setMessage({ type: "error", text: errorText });
+      const cancelled = snapshotCancelRequestedRef.current || error.response?.data?.code === "EXTRACTION_CANCELLED";
+      setMessage({ type: cancelled ? "success" : "error", text: cancelled ? "Snapshot cancelled." : errorText });
       await pollProgress();
       setExtractionProgress((current) => current?.phase === "failed" ? current : {
         ...current,
-        phase: "failed",
-        message: errorText,
+        phase: cancelled ? "cancelled" : "failed",
+        message: cancelled ? "Snapshot cancelled." : errorText,
       });
-      addLog(`Snapshot failed: ${errorText}`, "error");
+      addLog(cancelled ? "Snapshot cancelled by user." : `Snapshot failed: ${errorText}`, cancelled ? "success" : "error");
     } finally {
       window.clearInterval(progressTimer);
       setLoading(false);
+      setSnapshotCancelRequested(false);
+      snapshotCancelRequestedRef.current = false;
+      activeProgressIdRef.current = "";
+    }
+  };
+
+  const handleCancelSnapshot = async () => {
+    const progressId = activeProgressIdRef.current || extractionProgress?.id;
+    if (!progressId || snapshotCancelRequested) return;
+    setSnapshotCancelRequested(true);
+    snapshotCancelRequestedRef.current = true;
+    setMessage({ type: "success", text: "Cancelling snapshot. The current Oracle request may finish, then the run will stop." });
+    setExtractionProgress((current) => current ? {
+      ...current,
+      phase: "cancelling",
+      cancellationRequested: true,
+      message: "Cancelling snapshot. Stopping after the current task...",
+    } : current);
+    try {
+      await axios.post(`/api/extraction/cancel/${progressId}`);
+      addLog("Snapshot cancellation requested.", "success");
+    } catch (error) {
+      const errorText = error.response?.data?.error || error.message;
+      setMessage({ type: "error", text: `Could not cancel snapshot: ${errorText}` });
+      setSnapshotCancelRequested(false);
+      snapshotCancelRequestedRef.current = false;
+      addLog(`Snapshot cancellation failed: ${errorText}`, "error");
     }
   };
 
@@ -484,7 +524,7 @@ function App() {
         <article className="metric-card"><span className="metric-label">Setup and Functional Area</span><strong>{functionalArea?.name || offering?.name || "Not selected"}</strong><p>{offering?.name ? `${offering.name} · ` : ""}{selectedTasks.length} setup tasks selected.</p></article>
         <article className="metric-card"><span className="metric-label">Last Snapshot</span><strong>{latestRun ? new Date(latestRun.createdAt).toLocaleString() : "No snapshot yet"}</strong><p>{latestRun ? `${successfulTaskCount || latestRun.taskCount || 0} tasks, ${latestRun.recordCount || 0} records.` : "Generate a snapshot to create a workbook."}</p></article>
       </section>
-      <section className="panel-card"><h2>Quick Actions</h2><div className="button-row"><button className="outline-button" onClick={handleTestConnection} disabled={loading}>Test Connection</button><button onClick={() => setActiveView("snapshot")}>Configure Snapshot</button><button onClick={() => setActiveView("compare")}>Compare Environments</button><button onClick={() => setActiveView("migration")}>Migrate Configuration</button></div>{renderMessage()}</section>
+      <section className="panel-card"><h2>Quick Actions</h2><div className="button-row"><button className="outline-button" onClick={handleTestConnection} disabled={loading}>Test Connection</button><button onClick={() => setActiveView("snapshot")}>Config Snapshot</button><button onClick={() => setActiveView("compare")}>Config Compare</button><button onClick={() => setActiveView("migration")}>Config Migration</button></div>{renderMessage()}</section>
       {showHistory && <section className="panel-card"><h2>Recent Run History</h2><div className="history-wrap"><RunHistory runs={runs} /></div></section>}
     </>
   );
@@ -557,9 +597,9 @@ function App() {
 
   const renderSnapshot = () => (
     <>
-      <div className="page-heading"><h1>Configuration Snapshot</h1><p>Select a setup, functional area, and export each selected task into its own workbook sheet.</p></div>
+      <div className="page-heading"><h1>Config Snapshot</h1><p>Select a setup, functional area, and export each selected task into its own workbook sheet.</p></div>
       <section className="panel-card">
-        <div className="configuration-heading"><h2>Snapshot Configuration</h2><div className="source-switch"><button type="button" className={taskSource === "area" ? "" : "outline-button"} onClick={() => handleTaskSourceChange("area")} disabled={loading || catalogLoading}>Browse Functional Areas</button><button type="button" className={taskSource === "search" ? "" : "outline-button"} onClick={() => handleTaskSourceChange("search")} disabled={loading || catalogLoading}>Search All Tasks</button></div></div>
+        <div className="configuration-heading"><h2>Config Snapshot Setup</h2><div className="source-switch"><button type="button" className={taskSource === "area" ? "" : "outline-button"} onClick={() => handleTaskSourceChange("area")} disabled={loading || catalogLoading}>Browse Functional Areas</button><button type="button" className={taskSource === "search" ? "" : "outline-button"} onClick={() => handleTaskSourceChange("search")} disabled={loading || catalogLoading}>Search All Tasks</button></div></div>
         {taskSource === "area" ? (
           <div className="selection-grid">
             <label>Setup<select value={offering?.code || ""} onChange={handleOfferingChange} disabled={loading || catalogLoading}><option value="">Select a setup</option><option value="ALL">All Setups</option>{offerings.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}</select></label>
@@ -605,7 +645,7 @@ function App() {
 
   return (
     <main className="desktop-shell">
-      <aside className="sidebar"><div><div className="sidebar-brand"><img src={companyLogo} alt="Arcturus Consulting Services Inc" className="company-logo sidebar-company-logo" /><strong>{productName}</strong><span>{productTagline}</span></div><nav className="side-nav"><button className={activeView === "dashboard" ? "active" : ""} onClick={() => setActiveView("dashboard")}>Dashboard</button><button className={activeView === "snapshot" ? "active" : ""} onClick={() => setActiveView("snapshot")}>Configuration Snapshot</button><button className={activeView === "compare" ? "active" : ""} onClick={() => setActiveView("compare")}>Compare</button><button className={activeView === "migration" ? "active" : ""} onClick={() => setActiveView("migration")}>Migration</button><button className={activeView === "logs" ? "active" : ""} onClick={() => setActiveView("logs")}>Logs</button><button className={activeView === "settings" ? "active" : ""} onClick={() => setActiveView("settings")}>Settings</button></nav></div><div className="sidebar-footer"><p><span>Connection:</span><strong className="connected-dot">Connected</strong></p><p><span>User:</span><strong>{fusionCredentials.username}</strong></p><button className="sidebar-logout" onClick={handleLogout} disabled={loading}>Logout</button></div></aside>
+      <aside className="sidebar"><div><div className="sidebar-brand"><img src={companyLogo} alt="Arcturus Consulting Services Inc" className="company-logo sidebar-company-logo" /><strong>{productName}</strong><span>{productTagline}</span></div><nav className="side-nav"><button className={activeView === "dashboard" ? "active" : ""} onClick={() => setActiveView("dashboard")}>Dashboard</button><button className={activeView === "snapshot" ? "active" : ""} onClick={() => setActiveView("snapshot")}>Config Snapshot</button><button className={activeView === "compare" ? "active" : ""} onClick={() => setActiveView("compare")}>Config Compare</button><button className={activeView === "migration" ? "active" : ""} onClick={() => setActiveView("migration")}>Config Migration</button><button className={activeView === "logs" ? "active" : ""} onClick={() => setActiveView("logs")}>Logs</button><button className={activeView === "settings" ? "active" : ""} onClick={() => setActiveView("settings")}>Settings</button></nav></div><div className="sidebar-footer"><p><span>Connection:</span><strong className="connected-dot">Connected</strong></p><p><span>User:</span><strong>{fusionCredentials.username}</strong></p><button className="sidebar-logout" onClick={handleLogout} disabled={loading}>Logout</button></div></aside>
       <section className="content-area">{content}</section>
     </main>
   );

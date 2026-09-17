@@ -9,11 +9,13 @@ const express = require("express");
 const router = express.Router();
 const {
   runExtraction,
+  cancelExtraction,
   getHistory,
   getExtractionProgress,
 } = require("../controllers/extractionController");
 
 router.post("/run", runExtraction);
+router.post("/cancel/:progressId", cancelExtraction);
 router.get("/history", getHistory);
 router.get("/progress/:progressId", getExtractionProgress);
 

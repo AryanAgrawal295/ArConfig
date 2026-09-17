@@ -18,10 +18,13 @@ const { getSession } = require("../sessionStore");
 const { writeAudit } = require("../auditService");
 const {
   beginTask,
+  cancelProgress,
   completeProgress,
   failProgress,
   finishTask,
   getProgress,
+  isProgressCancelled,
+  markProgressCancelled,
   startProgress,
   updateProgress,
 } = require("../extractionProgress");
@@ -66,6 +69,7 @@ async function runTaskExtraction({ client, runCfg, req, res, startedAt }) {
     orgCodes: runCfg.orgCodes,
     onTaskStart: (task, index) => beginTask(progressId, task, index),
     onTaskFinish: (task, index, result) => finishTask(progressId, task, index, result),
+    shouldCancel: () => isProgressCancelled(progressId),
   });
   const { resolvedOrgCodes, taskResults } = extraction;
 
@@ -240,6 +244,23 @@ async function runExtraction(req, res) {
       downloadUrl: `/api/reports/${encodeURIComponent(filename)}`,
     });
   } catch (err) {
+    if (err.code === "EXTRACTION_CANCELLED") {
+      logger.info("Extraction cancelled by user");
+      markProgressCancelled(req.body?.progressId, err.message);
+      await RunHistory.create({
+        ownerId: session?.ownerId || "",
+        operation: "EXTRACT",
+        lifecycleStatus: "CANCELLED",
+        orgCodes: runCfg.orgCodes,
+        subinventoryCount: 0,
+        locatorCount: 0,
+        outputFile: "",
+        status: "cancelled",
+        errorMessage: err.message,
+      });
+      await writeAudit({ ownerId: session?.ownerId || "", action: "EXTRACTION_CANCELLED", status: "CANCELLED", metadata: { message: err.message } });
+      return res.status(499).json({ error: err.message, code: err.code });
+    }
     logger.error(`Extraction failed: ${err.message}`);
     failProgress(req.body?.progressId, err.message);
     await RunHistory.create({
@@ -271,4 +292,10 @@ async function getExtractionProgress(req, res) {
   return res.status(200).json(progress);
 }
 
-module.exports = { runExtraction, getHistory, getExtractionProgress };
+function cancelExtraction(req, res) {
+  const progress = cancelProgress(req.params.progressId);
+  if (!progress) return res.status(404).json({ error: "Extraction progress not found." });
+  return res.status(200).json(progress);
+}
+
+module.exports = { runExtraction, getHistory, getExtractionProgress, cancelExtraction };

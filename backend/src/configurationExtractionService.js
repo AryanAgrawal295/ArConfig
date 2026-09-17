@@ -65,13 +65,23 @@ async function extractOneTask(client, cfg, resolvedOrgCodes, task) {
   return extracted;
 }
 
-async function extractConfigurationItems({ client, cfg, tasks, orgCodes, onTaskStart, onTaskFinish }) {
+function throwIfCancelled(shouldCancel) {
+  if (!shouldCancel || !shouldCancel()) return;
+  const error = new Error("Task cancelled by user.");
+  error.code = "EXTRACTION_CANCELLED";
+  throw error;
+}
+
+async function extractConfigurationItems({ client, cfg, tasks, orgCodes, onTaskStart, onTaskFinish, shouldCancel }) {
   const selectedTasks = normalizeSelectedTasks(tasks);
+  throwIfCancelled(shouldCancel);
   const needsOrganizationScope = selectedTasks.some((task) => isSubinventoryTask(task) || isInventoryOrganizationTask(task));
   const resolvedOrgCodes = needsOrganizationScope ? await resolveOrgCodes(client, cfg, orgCodes || cfg.orgCodes) : (orgCodes || cfg.orgCodes);
+  throwIfCancelled(shouldCancel);
   const taskResults = [];
   let connectionFailure = "";
   for (const [index, task] of selectedTasks.entries()) {
+    throwIfCancelled(shouldCancel);
     if (onTaskStart) onTaskStart(task, index);
     let result;
     if (connectionFailure) {

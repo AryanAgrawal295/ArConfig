@@ -7,19 +7,38 @@ function count(plan, name) {
   return plan?.summary?.[name] || 0;
 }
 
+function readStoredState(name, fallback) {
+  try {
+    const stored = localStorage.getItem(name);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function useStoredState(name, fallback) {
+  const [value, setValue] = useState(() => readStoredState(name, fallback));
+
+  useEffect(() => {
+    localStorage.setItem(name, JSON.stringify(value));
+  }, [name, value]);
+
+  return [value, setValue];
+}
+
 function MigrationView({ offerings, addLog, refreshHistory, onOpenSettings }) {
   const [connections, setConnections] = useState([]);
   const [sources, setSources] = useState([]);
-  const [sourceType, setSourceType] = useState("EXTRACTION");
-  const [sourceRunId, setSourceRunId] = useState("");
+  const [sourceType, setSourceType] = useStoredState("arconfig.migration.sourceType", "EXTRACTION");
+  const [sourceRunId, setSourceRunId] = useStoredState("arconfig.migration.sourceRunId", "");
   const [workbook, setWorkbook] = useState(null);
-  const [destinationId, setDestinationId] = useState("");
-  const [offering, setOffering] = useState(null);
-  const [areas, setAreas] = useState([]);
-  const [area, setArea] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [selected, setSelected] = useState([]);
-  const [orgCodes, setOrgCodes] = useState("");
+  const [destinationId, setDestinationId] = useStoredState("arconfig.migration.destinationId", "");
+  const [offering, setOffering] = useStoredState("arconfig.migration.offering", null);
+  const [areas, setAreas] = useStoredState("arconfig.migration.areas", []);
+  const [area, setArea] = useStoredState("arconfig.migration.area", null);
+  const [tasks, setTasks] = useStoredState("arconfig.migration.tasks", []);
+  const [selected, setSelected] = useStoredState("arconfig.migration.selected", []);
+  const [orgCodes, setOrgCodes] = useStoredState("arconfig.migration.orgCodes", "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
   const [plan, setPlan] = useState(null);
@@ -142,11 +161,11 @@ function MigrationView({ offerings, addLog, refreshHistory, onOpenSettings }) {
   return (
     <>
       <div className="page-heading">
-        <h1>Configuration Migration</h1>
+        <h1>Config Migration</h1>
         <p>Validate a source workbook or previous extraction against a destination environment, preview changes, and execute only when supported Oracle handlers exist.</p>
       </div>
       <section className="panel-card">
-        <h2>Migration Configuration</h2>
+        <h2>Config Migration Setup</h2>
         {connections.length === 0 && (
           <div className="catalog-note compare-empty-state">
             <p>Migration needs at least one saved destination environment in Settings.</p>
@@ -185,7 +204,7 @@ function MigrationView({ offerings, addLog, refreshHistory, onOpenSettings }) {
         <div className="task-list compare-task-list">{tasks.map((task) => { const enabled = task.available !== false && task.exportSupported; return <label className={`task-option ${enabled ? "" : "task-disabled"}`} key={key(task)}><input type="checkbox" checked={selected.includes(key(task))} disabled={!enabled || busy} onChange={() => setSelected((current) => current.includes(key(task)) ? current.filter((item) => item !== key(task)) : [...current, key(task)])} /><span><strong>{task.name}</strong></span></label>; })}{!tasks.length && <p className="empty-state">Select a setup and functional area to load configuration items.</p>}</div>
         <div className="button-row compare-actions">
           <button onClick={validate} disabled={busy || !canValidate}>{busy ? "Validating..." : "Validate & Preview"}</button>
-          {downloadUrl && <button className="outline-button" onClick={download}>Download Migration Report</button>}
+          {downloadUrl && <button className="outline-button" onClick={download}>Download Config Migration Report</button>}
         </div>
         {message && <p className={message.type === "success" ? "status-ok" : "status-fail"}>{message.text}</p>}
       </section>
@@ -202,13 +221,13 @@ function MigrationView({ offerings, addLog, refreshHistory, onOpenSettings }) {
             {blockers.slice(0, 8).map((error, index) => <p className="migration-error" key={`${error.code}-${index}`}><strong>{error.code}</strong>: {error.configurationName ? `${error.configurationName} — ` : ""}{error.message}</p>)}
           </section>
           <section className="panel-card">
-            <h2>Migration Preview</h2>
+            <h2>Config Migration Preview</h2>
             <div className="history-wrap"><table className="history-table comparison-table"><thead><tr><th>Operation</th><th>Configuration</th><th>Dataset</th><th>Record Key</th><th>Changes</th><th>Reason</th></tr></thead><tbody>{previewRows.map((row) => <tr key={row.id}><td><span className={`diff-status diff-${row.operation.toLowerCase().replace(/_/g, "-")}`}>{row.operation}</span></td><td>{row.configurationName}</td><td>{row.dataset}</td><td>{row.recordKey}</td><td>{row.changes?.length || 0}</td><td>{row.reason || "—"}</td></tr>)}</tbody></table></div>
           </section>
           <section className="panel-card">
             <h2>Execution Confirmation</h2>
             <p className="helper-text">Execution is server-side guarded, reuses the immutable plan, and is disabled when the plan has blocking errors or no real Oracle migration handler. To execute a ready plan, type: <strong>{exactConfirmation}</strong></p>
-            <div className="input-action"><input value={confirmationText} onChange={(event) => setConfirmationText(event.target.value)} placeholder={exactConfirmation || "Select destination first"} /><button onClick={execute} disabled={busy || !canExecute}>Execute Migration</button></div>
+            <div className="input-action"><input value={confirmationText} onChange={(event) => setConfirmationText(event.target.value)} placeholder={exactConfirmation || "Select destination first"} /><button onClick={execute} disabled={busy || !canExecute}>Execute Config Migration</button></div>
           </section>
         </>
       )}

@@ -3,16 +3,35 @@ import axios from "axios";
 
 function key(task) { return task.code || task.name; }
 
+function readStoredState(name, fallback) {
+  try {
+    const stored = localStorage.getItem(name);
+    return stored ? JSON.parse(stored) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function useStoredState(name, fallback) {
+  const [value, setValue] = useState(() => readStoredState(name, fallback));
+
+  useEffect(() => {
+    localStorage.setItem(name, JSON.stringify(value));
+  }, [name, value]);
+
+  return [value, setValue];
+}
+
 function CompareView({ offerings, addLog, refreshHistory, onOpenSettings }) {
   const [connections, setConnections] = useState([]);
-  const [sourceId, setSourceId] = useState("");
-  const [targetId, setTargetId] = useState("");
-  const [offering, setOffering] = useState(null);
-  const [areas, setAreas] = useState([]);
-  const [area, setArea] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [selected, setSelected] = useState([]);
-  const [orgCodes, setOrgCodes] = useState("");
+  const [sourceId, setSourceId] = useStoredState("arconfig.compare.sourceId", "");
+  const [targetId, setTargetId] = useStoredState("arconfig.compare.targetId", "");
+  const [offering, setOffering] = useStoredState("arconfig.compare.offering", null);
+  const [areas, setAreas] = useStoredState("arconfig.compare.areas", []);
+  const [area, setArea] = useStoredState("arconfig.compare.area", null);
+  const [tasks, setTasks] = useStoredState("arconfig.compare.tasks", []);
+  const [selected, setSelected] = useStoredState("arconfig.compare.selected", []);
+  const [orgCodes, setOrgCodes] = useStoredState("arconfig.compare.orgCodes", "");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
   const [comparison, setComparison] = useState(null);
@@ -79,7 +98,7 @@ function CompareView({ offerings, addLog, refreshHistory, onOpenSettings }) {
 
   return (
     <>
-      <div className="page-heading"><h1>Configuration Compare</h1><p>Extract the same configuration from two saved Oracle environments and compare it by stable business keys.</p></div>
+      <div className="page-heading"><h1>Config Compare</h1><p>Extract the same configuration from two saved Oracle environments and compare it by stable business keys.</p></div>
       <section className="panel-card">
         <h2>Comparison Configuration</h2>
         {connections.length < 2 && (
